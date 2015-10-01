@@ -1,3 +1,12 @@
+/*
+ * Code to implement the following operations similar to UNIX commands:
+ * Copy - copy contents of one file to another.
+ * Interleave - interleave lines from 2 files to a 3rd output file.
+ * more - display first 10 lines of a file and then wait for user input (to display next 10 lines, next line or quit).
+ * grep - search for a string in a file and print all the lines which contain this string.
+ * Word count - display number of words, characaters, lines, shortest line in terms of characters & words and 3 longest words from a file.  
+ */
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
