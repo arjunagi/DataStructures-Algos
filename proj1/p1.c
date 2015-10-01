@@ -95,145 +95,258 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  char ch[500];
-  char ch1[500];
-  char ch2[500];
-  char *line1=NULL, *line2=NULL;
+  // case 0 - Copying files
+  char ch[100];
+
+  // case 1 - Interleave
+  char line1[200], line2[200];
+  char *c1, *c2;
+
+  // case 2 - more
   int i=0;
-  size_t lineSize = 0;
-  ssize_t read;
   char userInp='p';
+  char readLines[200], *temp = NULL;
+
+  // case 3 - grep
   char grepWord[11], oneWord[500];
   int grepWordLen = 0, lineNum = 1;
-  int c,lines=0,words=0,chars=0,lineLenWord=0,lineLenChars=0; 
-  char prev;
-  char *shortestLineChars, *shortestLineWords; //shortest line in terms of characters and words
-  char *longestWords[3]; //longest words
-  int sLine=0, sWord=0; //shortest line length in terms of characs and shortest line in terms of words
-  int lw1=0,lw2=0,lw3=0; //top 3 longest words lengths
+
+  // case 4 - Word count
+  char * line[100];  // to store all the lines in the file
+  char tempWord[30], tempLine[200];  // temporary array to store a word
+  char *c, *prev, *tempChar;    
+  char longestWord1[30], longestWord2[30], longestWord3[30];
+  int wordsInLine = 0, shortestLineWords = 0; //number of words in line and length of shortest line in terms of words
+  int longestWordsLen[3] = {0,0,0}; //lengths of longest words
+  int j = 1,k = 0;
+  int lineNumChars = 0, lineNumWords = 0; //line number of shortest lines in terms of characs and words
+  int lines=0,words=0,chars=0;  // Number of lines, words and characters in the file
+  int shortestLineLen = 0, lineLen = 0; // Length of shortest line in terms of length, size of a read line
+
 
   switch (argv[1][0]) {
   
-   //Copying files
+   /*
+    * Copying files
+    */
    case'0':
-     while(fgets(ch,100,in) != NULL)
-       fprintf(out,"%s", ch);
-     fclose(out);
-     fclose(in);
-     break;
+       // Get a character from the input file and put it in the out file
+       while(fgets(ch,100,in) != NULL)
+           fprintf(out,"%s", ch);
 
-   //Interleave
+       fclose(out);
+       fclose(in);
+       break;
+       //End of case '0'
+
+
+   /*
+    * Interleave
+    */
    case'1':
-     while(((line1=fgets(ch1,500,in1)) != NULL) || ((line2=fgets(ch2,500,in2)) != NULL))
-     {
-        if(line1!=NULL) {
-          printf("\nch1:%s\n",ch1);
-          fprintf(out,"%s", ch1);} 
-        if(line2!=NULL){
-          printf("\nch2:%s\n",ch2);
-          fprintf(out,"%s", ch2);}
-     }
-     fclose(in1);
-     fclose(in2);
-     fclose(out);
-     break;
-     
-   //more
-   //Print first 10 lines from a file and wait for user input
-   //if userInp is 'p', print next 10 lines
-   //if userInp is 'n', print next line
-   //if userInp is 'q', quit
-   case '2':
-     do {
-       if(userInp=='p') {
-         //Read 10 lines from file and print it
-         for(i=0;i<10;i++) {
-           read = getline(&line1, &lineSize, in);
-           if(read != -1)
-             printf("%s",line1);
-           else
-             exit(0);
-         }
-       }
-       else if(userInp=='n') {
-       // Read the next line and print it
-         read = getline(&line1, &lineSize, in);
-         if(read != -1)
-           printf("%s", line1);
-         else
-           exit(0);
-       }
-       scanf("%c",&userInp);
-     } while((userInp!='q') || (userInp=='n') || (userInp=='p'));
-     break;
+       do {
+           // read line from file 1 and put it in out file
+           if((c1 = fgets (line1, 200, in1))!=NULL) {
+               fprintf(out,"%s",line1);
+           }
 
-  //grep - case sensitive
+           // read line from file 2 and put it in out file
+           if((c2 = fgets (line2, 200, in2))!=NULL) {
+               fprintf(out,"%s",line2);
+           }
+       } while((c1 != NULL) || (c2 != NULL));
+
+       fclose(in1);
+       fclose(in2);
+       fclose(out);
+       break;
+       //End of case '1'
+
+   
+   /*  
+    * more
+    * Print first 10 lines from a file and wait for user input
+    * if userInp is 'p', print next 10 lines
+    * if userInp is 'n', print next line
+    * if userInp is 'q', quit
+    */
+   case '2':
+       do {
+           if(userInp=='p') {
+               //Read 10 lines from file and print it
+               for(i=0;i<10;i++) {
+                   temp = fgets(readLines, 200, in);
+                   if(temp != NULL)
+                       printf("%s",readLines);
+                   else
+                       exit(0);
+               } // end of for
+           } // end of if
+
+           else if(userInp=='n') {
+               // Read the next line and print it
+               temp = fgets(readLines, 200, in);
+               if(temp != NULL)
+                   printf("%s", readLines);
+               else
+                   exit(0);
+           } // end of else if
+
+           scanf("%c",&userInp); // take input from user for the next action
+       } while((userInp!='q') || (userInp=='n') || (userInp=='p'));
+
+       fclose(in);
+       break;
+       //End of case '2'
+
+
+  /*
+   * grep - case sensitive
+   */
   case '3':
-    printf("\nInput search string (10 char max): ");
-    fgets (grepWord, 11, stdin); //get the search string. Length is 11 as fgets read \n also.
-    grepWordLen = strlen(grepWord);
-    if ((grepWordLen>0) && (grepWord[grepWordLen - 1] == '\n'))
-        grepWord[grepWordLen - 1] = '\0';
-    if(grepWordLen <= 10) {
-      while((fgets(oneWord,500,in)) != NULL) {
-        if((strstr(oneWord,grepWord)) != NULL ) {
-          printf("\nline %d: %s",lineNum,oneWord);
-        }
-        lineNum+=1;
-      }
-    }
-    else {
-      printf("\n Search string should be 10 characters max");
-      exit(0);
-    }
-    break;
-  
-    // Word count 
-    case '4':
-    while(!feof(in))
-    {
-      prev = c;  //Store the previous character
-      c = fgetc(in); //Get the current character
-      chars++; //increment the number of character
-      //If character is new line, incremenet the number of lines parameter
-      if(c == '\n')
-      {
-        if((lineLenChars < sLine) || (sLine==0))
-          sLine = lineLenChars;
-        lineLenChars = 0; //Reset the parameter to count the number of characters in a line
-        lines++;
-        //If current character is \n and the previous character was an alphabet or a number, increment the number of words to include the last word of the previous line
-        if((prev>='0' && prev<='9') || (prev>='a' && prev<='z') || (prev>='A' && prev<='Z'))
-          words++;
-      }
+      printf("\nInput search string (10 char max): ");
+      fgets (grepWord, 11, stdin); //get the search string. Length is 11 as fgets read \n also.
+      grepWordLen = strlen(grepWord);
+      
+      //Change the last character of the word to '\0' to make it string compatible
+      if ((grepWordLen>0) && (grepWord[grepWordLen - 1] == '\n'))
+          grepWord[grepWordLen - 1] = '\0';
+
+      // Word to be searched has to be max 10 characters
+      if(grepWordLen <= 10) {
+          // Get each line from the file and see the word is a substring in the line. If yes, then print the line
+          while((fgets(oneWord,500,in)) != NULL) {
+              if((strstr(oneWord,grepWord)) != NULL ) {
+                  printf("\nline %d: %s",lineNum,oneWord);
+              }
+              lineNum+=1;
+          } // end of while
+      } // end of if
       else {
-        lineLenChars++; //increment the number of chars in a line
-        if((c>='0' && c<='9') || (c>='a' && c<='z') || (c>='A' && c<='Z'))
-        {
-          if((lineLenWord < sWord) || (sWord==0)) {
-            sWord = lineLenWord; printf("\nsWord: %d", sWord);}
-          lineLenWord = 0; //reset to 0
-          //lineLenWord++; //increment the number of words in a line.
-        }
-        else {
-          //if((lineLenWord < sWord) || (sWord==0))
-            //sWord = lineLenWord;
-          lineLenWord++; //increment the number of words in a line.
-          //lineLenWord = 0; //reset to 0
-          //increment number of words if current is not alphabet or number, but the prev character was.
-          if((prev>='0' && prev<='9') || (prev>='a' && prev<='z') || (prev>='A' && prev<='Z')) {
-            words++;
-          }
-        }
+          printf("\n Search string should be 10 characters max");
+          exit(0);
       }
-    }
-    printf("\n Number of lines: %d", lines);
-    printf("\n Number of words: %d", words);
-    printf("\n Number of characters: %d", chars);
-    printf("\n Shortest Line in terms of characs: %d", sLine);
-    printf("\n Shortest Line in terms of words: %d", sWord);
-    break;
-  }
+
+      fclose(in);
+      break;
+      //End of case '3'
+  
+
+    /*
+     * Word count
+     */ 
+    case '4':
+        // read the file line by line
+        while ((tempChar = fgets(tempLine, 200, in)) != NULL) {
+
+            lineLen = strlen(tempLine);
+            line[j] = malloc(lineLen + 1);
+            strcpy(line[j],tempLine);
+
+            // Get the shortest line in the file in terms of characters
+            if(shortestLineLen == 0 || lineLen < shortestLineLen) {
+                shortestLineLen = lineLen;
+                lineNumChars = j; //Get the line number of the lines
+            } //end of if
+
+            c = line[j]; //point to first character of each line
+            wordsInLine = 0;
+
+            do { 
+                // Read the line character by character to get number of words in a line 
+                if((*c>='0' && *c<='9') || (*c>='a' && *c<='z') || (*c>='A' && *c<='Z')) {
+                    tempWord[k] = *c; // store the word character by character
+                    ++k;
+                }
+                else {
+                    tempWord[k] = '\0'; // add '\0' at end of each word to make it string compatible
+
+                    // Get the 3 longest words in the file
+                    if(strlen(tempWord) > longestWordsLen[0]) {
+                        longestWordsLen[0] = strlen(tempWord);
+                        strcpy(longestWord1, tempWord);
+                    }  
+                    else if(strlen(tempWord) > longestWordsLen[1]) {
+                       longestWordsLen[1] = strlen(tempWord);
+                       strcpy(longestWord2, tempWord);
+                    }
+                    else if(strlen(tempWord) > longestWordsLen[2]) {
+                       longestWordsLen[2] = strlen(tempWord);
+                       strcpy(longestWord3, tempWord);
+                    }
+                
+                    memset(tempWord,'\0',30); //Reset the tempWord array so that next word can be stored
+                    k = 0;
+                     
+                    // Count the number of words in a line only if the previous character was alphanumeric  and current character is not alphanumeric
+                    if((*prev>='0' && *prev<='9') || (*prev>='a' && *prev<='z') || (*prev>='A' && *prev<='Z')) {
+                        wordsInLine++;
+                    }
+                }//end of else
+  
+                prev = c; //store the current character before moving onto the next character
+                chars++; // increment the character count
+                c++; // move to the next character in the line 
+            } while (*c != '\n');
+            // end of do while
+   
+            // Handle the scenario when the character read is '\n' 
+            if(*c == '\n') {
+                chars++; // increment the character count
+  
+                if((*prev>='0' && *prev<='9') || (*prev>='a' && *prev<='z') || (*prev>='A' && *prev<='Z')) {
+                    wordsInLine = wordsInLine + 1; // to include the last word in the line
+                    tempWord[k] = '\0'; //add '\0' at the end of the word to make it string compatible
+
+                    // Get the 3 longest words in the file
+                    if(strlen(tempWord) > longestWordsLen[0]) {
+                        longestWordsLen[0] = strlen(tempWord);
+                        strcpy(longestWord1, tempWord);
+                    }
+                    else if(strlen(tempWord) > longestWordsLen[1]) {
+                        longestWordsLen[1] = strlen(tempWord);
+                        strcpy(longestWord2, tempWord);
+                    }
+                    else if(strlen(tempWord) > longestWordsLen[2]) {
+                        longestWordsLen[2] = strlen(tempWord);
+                        strcpy(longestWord2, tempWord);
+                    }
+      
+                    memset(tempWord,'\0',30); //Reset the tempWord array so that next word can be stored
+                    k = 0;
+                } // end of if 
+            }// end of if(*c == '\n') 
+
+            // Get shortest line in terms of words 
+            if(shortestLineWords == 0 || wordsInLine < shortestLineWords) {
+                shortestLineWords = wordsInLine;
+                lineNumWords = j;
+            }
+      
+            j++; //move to the next line
+            words = words + wordsInLine; // add the words in each line to get the total number of words in a file
+
+      }// end of while
+
+  printf("\nNumber of Lines : %d", j-1);
+  printf("\nNumber of Words : %d", words);
+  printf("\nNumber of Characters : %d", chars);
+  line[lineNumChars][strlen(line[lineNumChars])-1] = '\0';  //Overwriting the '\n' at the end of line with '\0'
+  line[lineNumWords][strlen(line[lineNumWords])-1] = '\0';  //Overwriting the '\n' at the end of line with '\0'
+  printf("\nShortest line (%d characters) : %s", shortestLineLen, line[lineNumChars]);
+  printf("\nShortest line (%d words) : %s", shortestLineWords, line[lineNumWords]);
+  printf("\nLongest word 1: %s", longestWord1);
+  printf("\nLongest word 2: %s", longestWord2);
+  printf("\nLongest word 3: %s\n\n", longestWord3);
+  fclose(in);
+  
+  for(i = 1; i<j; i++ )
+      free(line[i]);
+
+  break; 
+  //end of case '4'
+
+  }// end of switch
 
   return 0;
 }
