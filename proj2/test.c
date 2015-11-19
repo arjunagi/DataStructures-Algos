@@ -144,7 +144,7 @@ void insertBlocksInTheList(int charCount, int blockSize, ROOT* root, char *num) 
       insertAtTail(root, data);
   }
 
-  // insert all other number in the linked list according to block size
+  // insert all other numbers in the linked list according to block size
   for(;i<=charCount-1;) {
       memset(tempNum,'0',blockSize);
       for(j=0;j<blockSize;j++,i++)
@@ -167,12 +167,12 @@ int addAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* root1, ROO
   if(num1==NULL) {
       sumRoot->head = root2->head;
       sumRoot->tail = root2->tail;
-      return 0;  //This is same as adding all blocks in list2 with 0
+      return numOfBlockOps;  //This is same as adding all blocks in list2 with 0
   }
   else if(num2==NULL) {
       sumRoot->head = root1->head;
       sumRoot->tail = root1->tail;
-      return 0;  //This is same as adding all blocks in list1 with 
+      return numOfBlockOps;  //This is same as adding all blocks in list1 with 
   }
   while(num1!=NULL || num2!=NULL) {
       sum = carry + ((num1!=NULL)? num1->data: 0) + ((num2!=NULL)? num2->data: 0);
@@ -185,10 +185,6 @@ int addAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* root1, ROO
       if(num1) num1 = num1->prev;
       if(num2) num2 = num2->prev;
   }
-  printf("\n addAndReturn\n");
-  displayList(root1);
-  displayList(root2);
-  displayList(sumRoot);
   return numOfBlockOps;
 }
 
@@ -230,12 +226,10 @@ int prodAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* prodRoot)
   char* prependZero = NULL;  //String which will store the number of 0's to be prepended to complete the block size
   ROOT* list1Root, *list2Root;
   ROOT* tempRoot1, *tempRoot2;
-  ROOT* sumRoot = makeRoot();
   ROOT* tempSumRoot1, *tempSumRoot2;
   NODE* tailOfNum1 = num1; //Pointer to the tail of num1.
   NODE* numFromList1, *numFromList2, *numFromTempSum1List, *numFromTempSum2List;
- 
-  
+
   while(num2!=NULL) {
       list1Root = makeRoot();
       list2Root = makeRoot();
@@ -271,7 +265,6 @@ int prodAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* prodRoot)
                   list1Root->head = tempRoot1->head;
                   list1Root->len = list1Root->len + tempRoot1->len;
               }
-              printf("\n list1Root of len %d: ", list1Root->len);
               displayList(list1Root);
               if(num1->next == NULL && flag == 0) {
                   // if the block from num1 is the first block, then there should be an offset introduced for list2 which will have
@@ -300,8 +293,6 @@ int prodAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* prodRoot)
                   list2Root->head = tempRoot2->head;
                   list2Root->len = list2Root->len + tempRoot2->len;
               }
-              printf("\n list2Root of len %d: ", list2Root->len);
-              displayList(list2Root);
               insertInList1=1;
               insertInList2=0;
               free(tempRoot1);
@@ -326,17 +317,23 @@ int prodAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* prodRoot)
 
       numFromTempSum1List = tempSumRoot1->tail;
       if(tempSumRoot2->head != NULL) numFromTempSum2List = tempSumRoot2->tail;
-      if(sumRoot!=NULL) {free(sumRoot); sumRoot = makeRoot();}
-      numOfAddOps =  numOfAddOps + addAndReturnBlockOps(blockSize, numFromTempSum1List, numFromTempSum2List, tempSumRoot1, tempSumRoot2, sumRoot);
-      printf("\nSumRoot:");
-      displayList(sumRoot);
-
+      else numFromTempSum2List = NULL;
+      if(prodRoot!=NULL) {
+            free(prodRoot); 
+            prodRoot = makeRoot();
+      }
+      numOfAddOps =  numOfAddOps + addAndReturnBlockOps(blockSize, numFromTempSum1List, numFromTempSum2List, tempSumRoot1, tempSumRoot2, prodRoot);
+      free(prependZero);
       free(list1Root);
       free(list2Root);
+
       if(num2) num2=num2->prev;
   }
-  free(sumRoot);
-
+  free(prodArray);
+  free(tempSumRoot1);
+  free(tempSumRoot2);
+  printf("\nNumber of add operations in multiplication: %d",numOfAddOps);
+  printf("\nNumber of multiply operations in multiplication(just the block multiplications): %d",numOfBlockOps);
   numOfBlockOps = numOfBlockOps + numOfAddOps; 
   return numOfBlockOps;
 }
@@ -444,15 +441,16 @@ int main(int argc, char *argv[]) {
   printf("Number of block ops for difference: %d\n", diffBlockOps); */
 
   // Multiply the two number and print the product and number of block operations
-  displayList(root1);
-  displayList(root2);
   prodBlockOps = prodAndReturnBlockOps(blockSize, num1, num2, prodRoot);
   printf("\nProduct of the two numbers: ");
-  //displayList(prodRoot);
-  printf("Number of block ops for product: %d\n", prodBlockOps);
+  displayList(prodRoot);
+  printf("Number of total block ops for product: %d\n", prodBlockOps);
 
-
-
+  free(root1);
+  free(root2);
+  free(sumRoot);
+  free(diffRoot);
+  free(prodRoot);
   free(num1AsString);
   free(num2AsString);
 }
