@@ -127,30 +127,63 @@ int readNumFromFile(FILE *in, char *num) {
   return charCount;
 }
 
+// Write the list pointed by the root r into the file "out"
+void writeToFile(FILE* out, ROOT* r, int blockSize) {
+  NODE* temp;
+  int len = 0, i = 0;
+  char zeroArray[blockSize-1];
+  
+  if(r == NULL) {
+      printf("\n Cant write as the result list is empty\n");
+      exit(0);
+  }
+
+  if (r != NULL) {
+    temp = r->head;
+    do {
+      len = floor(log10(abs(temp->data))) + 1;
+      if(len<blockSize) {
+          //prepend 0 if the number of digits is less than block size
+          for(i=0; i<(blockSize-len); i++)
+             zeroArray[i] = '0';
+          zeroArray[i] = '\0';
+          fprintf(out,"%s",zeroArray);
+      }
+      fprintf(out,"%d", temp->data);
+      temp = temp->next;
+    } while (temp != NULL);
+  }
+}
 
 // Insert the numbers in the linked list block by block.
 void insertBlocksInTheList(int charCount, int blockSize, ROOT* root, char *num) {
   int i=0, j=0;
   int digitsLeft; //Number of digits left to complete the block 
-  int data; // data to be stored in each node of linked list
-  char tempNum[blockSize]; //temporary array used to cover char to int
+  int data=0; // data to be stored in each node of linked list
+  char *tempNum = NULL; //temporary array used to convert char to int
 
   // If the first block will have less digits than block size, then take only the required number of digits.
   // Ex: If number is 12345 and block size is 2, then the first block will just have 1 in it.
-  if((digitsLeft = charCount%blockSize) != 0) {
+  if((digitsLeft = charCount%blockSize) != 0) { 
+      tempNum = (char*) malloc(blockSize);
       for(i=0;i<=digitsLeft-1;i++)
           tempNum[i] = num[i];
+      tempNum[i] = '\0';
       data = atoi(tempNum);
       insertAtTail(root, data);
+      free(tempNum);
   }
+ 
 
   // insert all other numbers in the linked list according to block size
   for(;i<=charCount-1;) {
-      memset(tempNum,'0',blockSize);
+      tempNum = (char*) malloc(blockSize);
       for(j=0;j<blockSize;j++,i++)
           tempNum[j] = num[i];
+      tempNum[j] = '\0';
       data = atoi(tempNum);
       insertAtTail(root, data);
+      free(tempNum);
   }
 }
 
@@ -221,39 +254,56 @@ int diffAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* diffRoot)
 int prodAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* prodRoot) {
   int numOfBlockOps=0, numOfAddOps=0, flag=0, i=0, tempSum1Flag=0, tempSum2Flag=0;
   int prod; //Prodcut of 2 blocks
+  int numOfZero = 0; //number of 0's to be prepended
+  int lenOfProd = 1; //Number of digits in the product. Will always be atleast 1 digit.
   int insertInList1=0, insertInList2=0; // flags to indicate which list to include the block in
-  char* prodArray = (char*) malloc(blockSize*2); //If 4 is the block size, then the max length of product of 4digit * 4digit is 8.
-  char* prependZero = NULL;  //String which will store the number of 0's to be prepended to complete the block size
-  ROOT* list1Root, *list2Root;
-  ROOT* tempRoot1, *tempRoot2;
-  ROOT* tempSumRoot1, *tempSumRoot2;
+  char* prodArray = (char*)malloc(blockSize*2); //If 4 is the block size, then the max length of product of 4digit * 4digit is 8.
+  char *tempProdArray = NULL, *zeroArray = NULL; //store the product temporarily and the concatenate(prepend) with required number of 0's
+  ROOT* list1Root, *list2Root; //The 2 lists we create after multipying the 2 blocks of num2 with all blocks of num1. This list is refreshed for every 2 blocks of num2
+  ROOT* tempRoot1, *tempRoot2; //Temporary list to store product of 2 blocks. This is then integrated into list1Root and list2Root
+  ROOT* tempSumRoot1, *tempSumRoot2; //To store the sum of the 2 lists(list1Root and list2Root) 
   NODE* tailOfNum1 = num1; //Pointer to the tail of num1.
   NODE* numFromList1, *numFromList2, *numFromTempSum1List, *numFromTempSum2List;
+
 
   while(num2!=NULL) {
       list1Root = makeRoot();
       list2Root = makeRoot();
       if(tempSum1Flag==0)tempSumRoot1 = makeRoot();
       if(tempSum2Flag==0)tempSumRoot2 = makeRoot();
-      flag = 0;
+      flag = 0; //flag to indicate when the 0 has to be entered in the tail of list2. This will create the 1 node offset required for list2
       insertInList1=1;
       num1 = tailOfNum1; //reset the pointer of num1, so that the next block of num2 can be multiplied with all blocks of num1 from the tail
  
       while(num1!=NULL) {
           prod = (num2->data)*(num1->data); 
+          lenOfProd = 1;
           if((num1->data!=0 && num1->data!=1) && (num2->data!=0 && num2->data!=1)) numOfBlockOps++;
-          sprintf(prodArray,"%d",prod);
-          prependZero = malloc((blockSize*2)-strlen(prodArray));
-          if(strlen(prodArray) < (blockSize*2)) {
-              memset(prependZero,'0',(blockSize*2)-strlen(prodArray));
-              memmove(prodArray+strlen(prependZero),prodArray,strlen(prodArray));
-              for (i = 0; i < strlen(prependZero); ++i)
-                  prodArray[i] = prependZero[i];
+          if(prod!=0) lenOfProd = floor(log10(abs (prod))) + 1;
+          tempProdArray = (char*) malloc(lenOfProd+1);
+          snprintf(tempProdArray,lenOfProd+1,"%d",prod);
+          
+          //prepend 0's if the product is not of the length blockSize*2
+          if(strlen(tempProdArray) < (blockSize*2)) {
+              numOfZero = (blockSize*2)-lenOfProd;
+              zeroArray = (char*) malloc(numOfZero);
+              for(i=0; i<numOfZero; i++)
+                   zeroArray[i] = '0';
+              zeroArray[i] = '\0';
+              prodArray = strcat(zeroArray,tempProdArray);
+              prodArray[strlen(prodArray)] = '\0';
           }
+          else
+             prodArray = tempProdArray;
+
           tempRoot1 = makeRoot();
-          tempRoot2 = makeRoot(); 
+          tempRoot2 = makeRoot();
+
+          // Insert the blocks in list1
           if(insertInList1==1) {
+              //Store the product in a temporary list
               insertBlocksInTheList(strlen(prodArray),blockSize,tempRoot1,prodArray);
+              //Integrate the temporary list into list1
               if(list1Root->len == 0) {
                   list1Root->head = tempRoot1->head;
                   list1Root->tail = tempRoot1->tail;
@@ -265,23 +315,26 @@ int prodAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* prodRoot)
                   list1Root->head = tempRoot1->head;
                   list1Root->len = list1Root->len + tempRoot1->len;
               }
-              displayList(list1Root);
               if(num1->next == NULL && flag == 0) {
                   // if the block from num1 is the first block, then there should be an offset introduced for list2 which will have
-                  // product of block1 of num2 and block2 of num1. Hence add 0 as the first node(from tail) in list2
+                  // product of block1 of num2 and block2(4,6...) of num1. Hence add 0 as the first node(from tail) in list2
                   insertBlocksInTheList(1, blockSize, tempRoot2, "0");
                   list2Root->head = tempRoot2->head;
                   list2Root->tail = tempRoot2->tail;
                   list2Root->len = list2Root->len + tempRoot2->len;
                   flag = 1;
               }
+              
               insertInList1=0;
               insertInList2=1;
               free(tempRoot1);
               free(tempRoot2);
           }
+          // Insert the blocks in list2
           else if(insertInList2==1) {
+              //Store the product in a temporary list
               insertBlocksInTheList(strlen(prodArray),blockSize,tempRoot2,prodArray);
+              //Integrate the temporary list into list2
               if(list2Root->len == 0) {
                   list2Root->head = tempRoot2->head;
                   list2Root->tail = tempRoot2->tail;
@@ -323,13 +376,14 @@ int prodAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* prodRoot)
             prodRoot = makeRoot();
       }
       numOfAddOps =  numOfAddOps + addAndReturnBlockOps(blockSize, numFromTempSum1List, numFromTempSum2List, tempSumRoot1, tempSumRoot2, prodRoot);
-      free(prependZero);
       free(list1Root);
       free(list2Root);
 
       if(num2) num2=num2->prev;
   }
   free(prodArray);
+  //free(tempProdArray);
+  //free(zeroArray);
   free(tempSumRoot1);
   free(tempSumRoot2);
   printf("\nNumber of add operations in multiplication: %d",numOfAddOps);
@@ -428,23 +482,30 @@ int main(int argc, char *argv[]) {
       }
   }
 
+  out = fopen(argv[4], "a+");
   // Add the two number and print the sum and number of block operations  
   addBlockOps = addAndReturnBlockOps(blockSize, num1, num2, root1, root2, sumRoot);
   printf("\nSum of the two numbers: ");
   displayList(sumRoot);
-  printf("Number of block ops for addition: %d\n", addBlockOps); 
-
-  // Subtract the two number and print the difference and number of block operations  
-  /*diffBlockOps = diffAndReturnBlockOps(blockSize, num1, num2, diffRoot);
-  printf("\nDifference of the two numbers: ");
-  displayList(diffRoot);
-  printf("Number of block ops for difference: %d\n", diffBlockOps); */
+  printf("Number of block operations for addition: %d\n", addBlockOps);
+  fprintf(out,"sum: %d block operation\n", addBlockOps); 
+  writeToFile(out, sumRoot, blockSize);
 
   // Multiply the two number and print the product and number of block operations
   prodBlockOps = prodAndReturnBlockOps(blockSize, num1, num2, prodRoot);
   printf("\nProduct of the two numbers: ");
   displayList(prodRoot);
-  printf("Number of total block ops for product: %d\n", prodBlockOps);
+  printf("Number of block operations for multiplication: %d\n", prodBlockOps);
+  fprintf(out,"\nprod: %d block operation\n", prodBlockOps); 
+  writeToFile(out, prodRoot, blockSize);
+
+  // Subtract the two number and print the difference and number of block operations  
+  diffBlockOps = diffAndReturnBlockOps(blockSize, num1, num2, diffRoot);
+  printf("\nDifference of the two numbers: ");
+  displayList(diffRoot);
+  printf("Number of block operations for subtraction: %d\n", diffBlockOps);
+  fprintf(out,"\ndifference: %d block operation\n", diffBlockOps); 
+  writeToFile(out, diffRoot, blockSize);
 
   free(root1);
   free(root2);
@@ -453,5 +514,8 @@ int main(int argc, char *argv[]) {
   free(prodRoot);
   free(num1AsString);
   free(num2AsString);
+  fclose(in1);
+  fclose(in2);
+  fclose(out);
 }
 

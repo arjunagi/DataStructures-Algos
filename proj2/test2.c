@@ -133,7 +133,7 @@ int readNumFromFile(FILE *in, char *num) {
           num = (char*)realloc(num,200);
       num[charCount++] = (char)c;
   }
-  charCount = charCount - 1; //not counting the EOF
+  //charCount = charCount - 1; //not counting the EOF
   return charCount;
 }
 
@@ -232,12 +232,18 @@ int addAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* root1, ROO
       carry = (sum >= toGetBlockSize)? 1 : 0; //determine if carry is required. Ex: If sum is 105 and toGetBlockSize is 100, then carry is 1. 
       // update sum if it is greater than 10
       sum = sum % toGetBlockSize;
-      if(overwriteList == 1)
+      if(overwriteList == 1) {
           insertAtHead(tempSumRoot,sum);
-      else
+          if(carry == 1 && num1->prev==NULL && num2->prev==NULL) 
+              insertAtHead(tempSumRoot,carry);   
+      }
+      else {
           insertAtHead(sumRoot, sum);
+          if(carry == 1 && num1->prev==NULL && num2->prev==NULL) 
+              insertAtHead(sumRoot,carry);
+      }
       if((num1!=NULL && num1->data != 0) && (num2!=NULL && num2->data != 0)) numOfBlockOps++; // 1 block operation for addition. Counted only if both numbers are non-zero.
-      if(carry == 1) numOfBlockOps++; // 1 block operation if there is a carry. 
+      if(carry == 1 && num1->prev!=NULL && num2->prev!=NULL) numOfBlockOps++; // 1 block operation if there is a carry. 
       if(num1) num1 = num1->prev;
       if(num2) num2 = num2->prev;
   }
@@ -266,11 +272,11 @@ int diffAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* diffRoot)
       }
       else {
           // b1<b2. Hence we need to borrow from next node
-          b1 = b1 + addThisForBorrow;                  // 1 block operation
-          num1->prev->data = num1->prev->data - 1;     // 1 block operation
-          diff = b1-b2;                                // 1 block operation
+          b1 = b1 + addThisForBorrow; numOfBlockOps++;                 // 1 block operation
+          num1->prev->data = num1->prev->data - 1;  numOfBlockOps++;   // 1 block operation
+          diff = b1-b2; 
+          if(b2!=0) numOfBlockOps++;                     // 1 block operation for diff only if b2 is not 0
           insertAtHead(diffRoot, diff);
-          numOfBlockOps = numOfBlockOps + 3;
       }
       if(num1) num1 = num1->prev;
       if(num2) num2 = num2->prev;
