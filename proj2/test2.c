@@ -242,8 +242,13 @@ int addAndReturnBlockOps(int blockSize, NODE* num1, NODE* num2, ROOT* root1, ROO
           if(carry == 1 && num1->prev==NULL && num2->prev==NULL) 
               insertAtHead(sumRoot,carry);
       }
-      if((num1!=NULL && num1->data != 0) && (num2!=NULL && num2->data != 0)) numOfBlockOps++; // 1 block operation for addition. Counted only if both numbers are non-zero.
-      if(carry == 1 && num1->prev!=NULL && num2->prev!=NULL) numOfBlockOps++; // 1 block operation if there is a carry. 
+
+      // 1 block operation for addition. Counted only if both numbers are non-zero.
+      if((num1!=NULL && num1->data != 0) && (num2!=NULL && num2->data != 0)) numOfBlockOps++;
+      // 1 block operation if there is a carry and there is a next block to which the carry is added. 
+      // Ex: 99+99 will generate a carry 1 but this 1 has no other number to be added to. Hence it is NOT counted as carry
+      if(carry == 1 && num1->prev!=NULL && num2->prev!=NULL) numOfBlockOps++;
+
       if(num1) num1 = num1->prev;
       if(num2) num2 = num2->prev;
   }
