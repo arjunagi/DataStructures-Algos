@@ -14,8 +14,8 @@ typedef struct station {
   int numOfTransferLines; //number of other lines a transfer can be done to
   int timeToReach; //Time to reach this station from the first station on this line.
   int stopTime; //Duration for which the train stops on this station.
-  char* transferLines[4];
-  int transferTimes[4];
+  char* transferLines[3];
+  int transferTimes[3];
   bool visited;
   struct station* next;
   struct station* prev;
@@ -130,37 +130,34 @@ void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
   }
 
   int ch=0;
-  char* lineInfo = malloc(20);
-  char* lineName = malloc(10);
-  char *blankLine = calloc(5, sizeof(char*));
+  char* lineInfo = NULL;
+  char* lineName = NULL;
   int numOfStations = 0;
-  char* stationInfo = malloc(100);
+  char* stationInfo = NULL;
   char* stationName = NULL;
   int numOfTransferLines = 0;
   int stopTime = 0;
   int timeToReach = 0;
-  char** transferLines;
-  transferLines = malloc(sizeof(char) * 4);
-  int transferTimes[4];
+  char* transferLines[3] = {NULL};
+  int transferTimes[3];
   STATION *station = NULL;
   int k=0, n=0;
-  char *tempTransferLines[8];
-  char *temp = NULL;
+  char *tempTransferLines[6];
+  char *temp;
 
   for(int i=0; i<NUM_OF_LINES; i++) {
     printf("\nLine: %d\n", i);
-    //lineInfo = malloc(20);
-    //lineName = malloc(10);
-    //blankLine = calloc(5, sizeof(char*));
-    memset(transferLines, '\0', sizeof(*transferLines));
-    memset(transferTimes, '0', sizeof(transferTimes));
+    lineInfo = malloc(20);
+    lineName = malloc(10);
+    memset(transferLines, '\0', sizeof(char)*3);
+    memset(transferTimes, '0', sizeof(int)*3);
     fgets(lineInfo,20,metro);
     sscanf(lineInfo, "%s (%d)", lineName, &numOfStations);
     line[i] = makeLine();
     printf("\nLine name: %s\nnumber of stations: %d\n", lineName, numOfStations);
 
     for(int j=0;j<numOfStations;j++) {
-      //stationInfo = malloc(100);
+      stationInfo = malloc(100);
       stationName = malloc(30);
       fgets(stationInfo,100,metro);
       sscanf(stationInfo,"%s %d %d %d", stationName, &numOfTransferLines, &timeToReach, &stopTime);
@@ -176,30 +173,29 @@ void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
            temp = strtok(NULL, " ");
            n++;
          }
-        // Store the transfer lines and the transfer times in their respective arrays.
-        for(n=0;n<(numOfTransferLines*2);n++) {
-          printf("\nn: %d  temp: %s", n, tempTransferLines[n]);
-          if(n%2 == 0) transferLines[n] = tempTransferLines[n]; 
-          else transferTimes[n] = atoi(tempTransferLines[n]);
-        }
+      }
+      // Store the transfer lines and the transfer times in their respective arrays.
+      for(n=0;n<(numOfTransferLines*2);n++) {
+        if(n/2 == 0) transferLines[i] = tempTransferLines[i];
+        else transferTimes[i] = atoi(tempTransferLines[i]);
       }
       station = insertStationInLine(line[i], lineName, stationName, numOfTransferLines, timeToReach, stopTime, transferLines, transferTimes);
-      /*if(numOfTransferLines != 0) {
+      if(numOfTransferLines != 0) {
          printf("\nmake transfer");
          transferStations[k++] = makeTransferStation(station, stationName, lineName);
          //k++;
          //if(k%30 == 0) realloc(transferStations, 30*sizeof(TRANSFERSTATION));
-      }*/
+      }
       printf("Name: %s  Transfers: %d  Stop: %d\n", stationName, numOfTransferLines, stopTime);
    }
+   char *blankLine = calloc(5, sizeof(char*));
    fgets(blankLine, 5, metro); 
+   free(lineInfo);
+   free(stationInfo);
+   free(stationName);
+   free(lineName);
+   free(blankLine);
   }
-  free(lineInfo);
-  free(stationInfo);
-  free(stationName);
-  free(transferLines);
-  free(lineName);
-  free(blankLine);
   fclose(metro);
 }
 
@@ -225,8 +221,8 @@ int main() {
    transferStations = malloc(sizeof(TRANSFERSTATION) * 92);
    readStationsFromFile(line, transferStations);
    displayLine(line[0]);
-   //for(int i=0; i<92; i++)
-     // printf("\n%s",transferStations[i]->station->stationName);
+   for(int i=0; i<92; i++)
+      printf("\n%s",transferStations[i]->station->stationName);
    free(transferStations);
 return 0;
 }
