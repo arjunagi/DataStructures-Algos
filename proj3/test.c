@@ -6,6 +6,10 @@
 #define NUM_OF_LINES 6
 #define NEW(x) (x*)malloc(sizeof(x))
 
+// Global variables to store the source and destination stations 
+char* sourceName = NULL;
+char* destinationName = NULL;
+
 //Data structure for each station.
 typedef struct station {
   char* lineName; //the line on which this station is located
@@ -20,6 +24,9 @@ typedef struct station {
   struct station* next;
   struct station* prev;
 } STATION;
+
+//STATION *source;
+//STATION *destination;
 
 // Data structure for the line(root) node. The root node has the pointers to the first and last stations and also the number of stations on a line.
 typedef struct {
@@ -120,8 +127,7 @@ STATION* insertStationInLine(LINE *line, char* lineName, char* stationName, int 
 }
 
 
-
-void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
+void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[], STATION *source, STATION *destination) {
 
   FILE *metro = fopen("metro.txt", "r");
   if(metro == NULL) {
@@ -134,39 +140,39 @@ void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
   char* lineName = malloc(10);
   char *blankLine = calloc(5, sizeof(char*));
   int numOfStations = 0;
-  char* stationInfo = malloc(100);
+  char* stationInfo = NULL;
   char* stationName = NULL;
+  bool isTransferPossible;
   int numOfTransferLines = 0;
   int stopTime = 0;
   int timeToReach = 0;
-  char** transferLines;
-  transferLines = malloc(sizeof(char) * 4);
+  char** transferLines = NULL;
   int transferTimes[4];
   STATION *station = NULL;
-  int k=0, n=0;
+  int k=0, n=0, x=0, y=0;
   char *tempTransferLines[8];
   char *temp = NULL;
+  bool sourceFound=false, destFound=false;
 
   for(int i=0; i<NUM_OF_LINES; i++) {
     printf("\nLine: %d\n", i);
-    //lineInfo = malloc(20);
-    //lineName = malloc(10);
-    //blankLine = calloc(5, sizeof(char*));
-    memset(transferLines, '\0', sizeof(*transferLines));
-    memset(transferTimes, '0', sizeof(transferTimes));
+    memset(transferTimes, 0, sizeof(transferTimes));
     fgets(lineInfo,20,metro);
     sscanf(lineInfo, "%s (%d)", lineName, &numOfStations);
     line[i] = makeLine();
     printf("\nLine name: %s\nnumber of stations: %d\n", lineName, numOfStations);
 
     for(int j=0;j<numOfStations;j++) {
-      //stationInfo = malloc(100);
+      transferLines = malloc(sizeof(char) * 4);
+      stationInfo = malloc(100);
       stationName = malloc(30);
+      isTransferPossible = false;
       fgets(stationInfo,100,metro);
       sscanf(stationInfo,"%s %d %d %d", stationName, &numOfTransferLines, &timeToReach, &stopTime);
       temp = strtok (stationInfo," ");
       n=0;
       if(numOfTransferLines != 0) {
+         isTransferPossible = true;
          while (temp != NULL && n<(4+(numOfTransferLines*2)))  
   	 {
          //At transfer stations, there are 4 strings of station name, transfers, time from first stop, stop time. If there is 1 transfer, then there is 2 
@@ -176,28 +182,39 @@ void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
            temp = strtok(NULL, " ");
            n++;
          }
+        x=0, y=0;
         // Store the transfer lines and the transfer times in their respective arrays.
         for(n=0;n<(numOfTransferLines*2);n++) {
-          printf("\nn: %d  temp: %s", n, tempTransferLines[n]);
-          if(n%2 == 0) transferLines[n] = tempTransferLines[n]; 
-          else transferTimes[n] = atoi(tempTransferLines[n]);
+          if(n%2 == 0) { transferLines[x] = tempTransferLines[n]; x++; } 
+          else { transferTimes[y] = atoi(tempTransferLines[n]); y++; }
         }
       }
       station = insertStationInLine(line[i], lineName, stationName, numOfTransferLines, timeToReach, stopTime, transferLines, transferTimes);
-      /*if(numOfTransferLines != 0) {
-         printf("\nmake transfer");
+      if(numOfTransferLines != 0) {
          transferStations[k++] = makeTransferStation(station, stationName, lineName);
-         //k++;
-         //if(k%30 == 0) realloc(transferStations, 30*sizeof(TRANSFERSTATION));
-      }*/
+      }
+
+      // Check if source and destination stations created are correct. If yes, then store their Station objects.
+      if((strcmp(stationName,sourceName) == 0) && sourceFound == false) {
+         sourceFound = true;
+         source = station;
+         //source = makeStation(lineName, stationName, isTransferPossible,numOfTransferLines,timeToReach,stopTime,false,transferLines,transferTimes);
+         printf("\n\nsource->lineName : %s\n\n", source->lineName);
+         //source->lineName = station->lineName;
+      }
+      if((strcmp(stationName,destinationName) == 0) && destFound == false) {
+         destFound = true;
+         //destination = makeStation(lineName, stationName, isTransferPossible,numOfTransferLines,timeToReach,stopTime,false,transferLines,transferTimes);
+         destination = station;
+      }
       printf("Name: %s  Transfers: %d  Stop: %d\n", stationName, numOfTransferLines, stopTime);
    }
    fgets(blankLine, 5, metro); 
+   free(transferLines);
+   free(stationInfo);
+   free(stationName);
   }
   free(lineInfo);
-  free(stationInfo);
-  free(stationName);
-  free(transferLines);
   free(lineName);
   free(blankLine);
   fclose(metro);
@@ -218,15 +235,48 @@ void displayLine(LINE* line) {
 }
 
 
-int main() {
+int main(int argc, char *argv[]) {
+
+   if(argc != 2) {
+     printf("\nWrong number of options provided for a.out\n");
+     printf("\nThe usage is: a.out output_file\n");
+     exit(0);
+   }
+   
+   sourceName = malloc(sizeof(char) * 30);;
+   destinationName = malloc(sizeof(char) * 30);;
+   printf("\nEnter the source station: ");
+   scanf("\%s", sourceName);
+   printf("\nEnter the destination station: ");
+   scanf("\%s", destinationName);
+
+   //STATION *source = NULL;
+   //STATION *destination = NULL;
+   STATION *source = malloc(sizeof(STATION));
+   STATION *destination = malloc(sizeof(STATION));
+
+   if(strcmp(sourceName, destinationName) == 0) {
+     printf("\nSource and destination is same!\n");
+     exit(0);
+   }
+  
+   FILE * out = fopen(argv[1], "w");
+
    LINE* line[6] = {NULL}; //There are 6 lines
+
    //Array of transfer stations. Example: Fort Totten of green line is considered 1 transfer station and For Totten of red is considered as another.  
    TRANSFERSTATION** transferStations;
    transferStations = malloc(sizeof(TRANSFERSTATION) * 92);
-   readStationsFromFile(line, transferStations);
-   displayLine(line[0]);
+   readStationsFromFile(line, transferStations,source,destination);
+   printf("\n source obj name: %s in line: %s\n", source->stationName, source->lineName);
+   printf("\n dest obj name: %s in line: %s\n", destination->stationName, destination->lineName);
+   //displayLine(line[0]);
    //for(int i=0; i<92; i++)
-     // printf("\n%s",transferStations[i]->station->stationName);
+     //printf("\n%s",transferStations[i]->station->stationName);
    free(transferStations);
-return 0;
+   
+   fclose(out);
+   free(source);
+   free(destination);
+   return 0;
 }
