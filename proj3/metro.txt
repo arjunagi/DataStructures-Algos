@@ -46,7 +46,7 @@ Morgan_Blvd 1 111 21 silver 20
 Addison_Rd 1 225 21 silver 20
 Capitol_Heights 1 339 21 silver 20
 Benning_Rd 1 450 30 silver 20
-Stadium_Amory 2 700 60 silver 20 orange 45
+Stadium_Armory 2 700 60 silver 20 orange 45
 Potomac_Ave 2 830 30 silver 20 orange 20
 Eastern_Market 2 907 25 silver 30 orange 20
 Capitol_South 2 1009 28 silver 20 orange 30
@@ -75,7 +75,7 @@ Morgan_Blvd 1 112 18 blue 20
 Addison_Rd 1 225 20 blue 19
 Capitol_Heights 1 340 20 blue 10
 Benning_Rd 1 450 30 blue 20
-Stadium_Amory 2 690 55 blue 18 orange 70
+Stadium_Armory 2 690 55 blue 18 orange 70
 Potomac_Ave 2 820 20 blue 25 orange 50
 Eastern_Market 2 900 25 blue 25 orange 45
 Capitol_South 2 999 55 blue 40 orange 35
@@ -105,7 +105,7 @@ Landover 0 121 25
 Cheverly 0 250 20
 Deanwood 0 373 26
 Minneasota_Ave 0 502 22 
-Stadium_Amory 2 800 45 silver 50 blue 55
+Stadium_Armory 2 800 45 silver 50 blue 55
 Potomac_Ave 2 907 20 silver 40 blue 45
 Eastern_Market 2 1000 24 silver 40 blue 40
 Capitol_South 2 1108 20 silver 40 blue 40
@@ -154,4 +154,4 @@ Grosvenor_Strathmore 0 2999 19
 White_Flint 0 3130 30 
 Twinbrook 0 3249 19
 Rockville 0 3385 19
-Shady Grove 0 3600 
+Shady_Grove 0 3600 
