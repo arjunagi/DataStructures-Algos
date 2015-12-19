@@ -38,7 +38,7 @@ Ronald_Reagan_Airport 1 1950 50 blue 20
 Braddock_Rd 1 2038 20 blue 20
 King_St_Old_Town 1 2200 30 blue 58
 Eisenhower_Ave 0 2360 20
-Hungtinton 0 2500
+Huntington 0 2500
 
 blue (27)
 Largo_Town_Center 1 0 silver 0

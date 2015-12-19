@@ -198,7 +198,6 @@ void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
   for(int i=0; i<NUM_OF_LINES; i++) {
     lineInfo = (char*) malloc(20);
     lineName = (char*) malloc(10);
-    //printf("\nLine: %d\n", i);
     memset(transferTimes, 0, sizeof(transferTimes));
     fgets(lineInfo,20,metro);
     sscanf(lineInfo, "%s (%d)", lineName, &numOfStations);
@@ -295,6 +294,56 @@ int getDirection(STATION *source, STATION *dest) {
    return direction;
 }
 
+
+STATION* getCurrentTransferStation(STATION* source, STATION* dest) {
+  STATION *temp = source;
+  bool found = false;
+  char* destLineColor = dest->lineName;
+
+  while(temp->next != NULL && found == false) {
+    for(int i=0; i<temp->numOfTransferLines; i++) {
+      if(strcmp(temp->transferLines[i], destLineColor) == 0) {
+        found = true;
+        break;
+      }
+      if(found == true) break;
+    }
+    if(found == true) break;
+    temp = temp->next;
+  }
+
+  if(found == false) temp = source;
+
+  while(temp->prev != NULL && found == false) {
+    for(int i=0; i<temp->numOfTransferLines; i++) {
+      if(strcmp(temp->transferLines[i], destLineColor) == 0) {
+        found = true;
+        break;
+      }
+    }
+    if(found == true) break;
+    temp = temp->prev;
+  }
+  
+  if(found == true) return temp;
+  else return NULL;
+}
+
+
+/*
+ *
+ */
+int getTransferTime(STATION* source, STATION* dest, char* destLineColor) {
+  
+  STATION* temp = getCurrentTransferStation(source,dest);
+  for(int i=0; i<temp->numOfTransferLines; i++) {
+    if(strcmp(temp->transferLines[i], destLineColor) == 0) 
+      return temp->transferTimes[i];
+  }
+  return 0;
+}
+
+
 int getStopTimes(STATION *source, STATION* dest) {
 
   int totalStopTime = 0;
@@ -317,10 +366,46 @@ int getStopTimes(STATION *source, STATION* dest) {
   return totalStopTime;
 }
 
+/*
+ *****************************************************************************
+ * Get the index of the transfer station from the array of transfer stations.
+ *****************************************************************************
+ */
+int getTransferStationIndex(char* stationName, char* lineName) {
+  int i=0;
+  for(i=0; i<25; i++) {
+    if((strcmp(transferStations[i]->stationName, stationName) == 0) && (strcmp(transferStations[i]->lineName, lineName) == 0)) 
+      goto found_index;
+  }
+  found_index:
+  return i;
+}
+
+/*
+ *******************************************************
+ * Get the station to which the transfer has to made.
+ *******************************************************
+ */
+STATION* getTransferStation(STATION* source, STATION* dest, int* currentTransferStationNumber) {
+
+  STATION *temp = NULL;
+  STATION *transferStation;
+  int transferStationIndex = 0;
+  char* destLineColor = dest->lineName;
+  
+  temp = getCurrentTransferStation(source,dest);
+  if(temp != NULL) {
+    *currentTransferStationNumber = temp->stationNumber;
+    transferStationIndex =  getTransferStationIndex(temp->stationName, destLineColor);
+    transferStation = transferStations[transferStationIndex]->station;
+  }
+  printf("\n transfer station: %s transferring to: %s", transferStation->stationName, transferStation->lineName);
+  return transferStation;
+}
 
 void displayPath(int sourceLineIndex, int destLineIndex, STATION *source, STATION * dest, STATION *transferStation, int startStationPos, int destStationPos, int numberOfStationsCurrentLine, int numberOfStationsTransferLine, int currentTransferStationNumber, STATION* currentTransferStation) {
 
-  int stopTime, totalTime; 
+  int stopTime, totalTime, transferTime; 
   char *towards1, *towards2;
   
   //No transfer required
@@ -351,7 +436,9 @@ void displayPath(int sourceLineIndex, int destLineIndex, STATION *source, STATIO
 
     stopTime = getStopTimes(source,currentTransferStation);
     stopTime+= getStopTimes(transferStation, dest);
-    totalTime = stopTime + abs(currentTransferStation->timeToReach - source->timeToReach) + abs(transferStation->timeToReach - dest->timeToReach);
+    transferTime = getTransferTime(source, dest, dest->lineName);
+    printf("\n transferTime: %d\n", transferTime);
+    totalTime = stopTime + abs(currentTransferStation->timeToReach - source->timeToReach) + transferTime + abs(transferStation->timeToReach - dest->timeToReach);
     printf("\nStart from %s station on %s line towards %s for %d stations to reach %s.", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine, currentTransferStation->stationName);
     printf("\nTransfer to %s line.", transferStation->lineName);
     printf("\nTake %s line towards %s for %d stations to reach %s", transferStation->lineName, towards2, numberOfStationsTransferLine, dest->stationName);
@@ -359,101 +446,7 @@ void displayPath(int sourceLineIndex, int destLineIndex, STATION *source, STATIO
   }
 }
 
-/*
- *****************************************************************************
- * Get the index of the transfer station from the array of transfer stations.
- *****************************************************************************
- */
-int getTransferStationIndex(char* stationName, char* lineName) {
-  int i=0;
-  for(i=0; i<25; i++) {
-    if((strcmp(transferStations[i]->stationName, stationName) == 0) && (strcmp(transferStations[i]->lineName, lineName) == 0)) 
-      goto found_index;
-  }
-  found_index:
-  return i;
-}
 
-STATION* getCurrentTransferStation(STATION* source, STATION* dest) {
-  STATION *temp = source;
-  STATION *transferStation;
-  bool found = false;
-  char* destLineColor = dest->lineName;
-
-  while(temp->next != NULL && found == false) {
-    for(int i=0; i<temp->numOfTransferLines; i++) {
-      if(strcmp(temp->transferLines[i], destLineColor) == 0) {
-        found = true;
-        break;
-      }
-      if(found == true) break;
-    }
-    if(found == true) break;
-    temp = temp->next;
-  }
-
-  if(found == false) temp = source;
-
-  while(temp->prev != NULL && found == false) {
-    for(int i=0; i<temp->numOfTransferLines; i++) {
-      if(strcmp(temp->transferLines[i], destLineColor) == 0) {
-        found = true;
-        break;
-      }
-    }
-    if(found == true) break;
-    temp = temp->prev;
-  }
-
-  return temp;
-}
-
-/*
- *******************************************************
- * Get the station to which the transfer has to made.
- *******************************************************
- */
-STATION* getTransferStation(STATION* source, STATION* dest, int* currentTransferStationNumber) {
-
-  STATION *temp = source;
-  STATION *transferStation;
-  bool found = false;
-  char* destLineColor = dest->lineName;
-  int transferStationIndex = 0;
- 
-  while(temp->next != NULL && found == false) { 
-    for(int i=0; i<temp->numOfTransferLines; i++) {
-      if(strcmp(temp->transferLines[i], destLineColor) == 0) {
-        found = true;
-        break;
-      }
-      if(found == true) break;
-    }
-    if(found == true) break;
-    temp = temp->next;
-  }
-  
-  if(found == false) temp = source;
-
-  while(temp->prev != NULL && found == false) {
-    for(int i=0; i<temp->numOfTransferLines; i++) {
-      if(strcmp(temp->transferLines[i], destLineColor) == 0) {
-        found = true;
-        break;
-      }
-    }
-    if(found == true) break;
-    temp = temp->prev;
-  }
- 
-  if(found == true) {
-    *currentTransferStationNumber = temp->stationNumber;
-    transferStationIndex =  getTransferStationIndex(temp->stationName, destLineColor);
-    transferStation = transferStations[transferStationIndex]->station;
-  }
-  printf("\n transfer station: %s transferring to: %s", transferStation->stationName, transferStation->lineName);
-  return transferStation;
-}
  
 /*
  ******************************************************
