@@ -220,7 +220,6 @@ void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
       //printf("LineName: %s  Name: %s  Transfers: %d  Stop: %d\n", lineName, stationName, numOfTransferLines, stopTime);
    }
    fgets(blankLine, 5, metro); 
-   //free(transferLines);
   }
   free(stationInfo);
   free(stationName);
@@ -376,7 +375,7 @@ STATION* getTransferStation(STATION* source, STATION* dest) {
 
 void displayPath(int sourceLineIndex, int destLineIndex, STATION *source, STATION * dest, STATION *transferStation, int startStationPos, int destStationPos, int numberOfStationsCurrentLine, int numberOfStationsTransferLine, STATION* currentTransferStation) {
 
-  int stopTime, totalTime, transferTime; 
+  int stopTime=0, totalTimeMin=0, totalTimeSec=0, transferTime=0; 
   char *towards1, *towards2;
   
   //No transfer required
@@ -387,10 +386,11 @@ void displayPath(int sourceLineIndex, int destLineIndex, STATION *source, STATIO
       towards1 = line[sourceLineIndex]->end->stationName;
 
     stopTime = getStopTimes(source,dest);
-    totalTime = stopTime + abs(source->timeToReach - dest->timeToReach);
+    totalTimeMin = (stopTime + abs(source->timeToReach - dest->timeToReach))/60;
+    totalTimeSec = (stopTime + abs(source->timeToReach - dest->timeToReach))%60;
 
     printf("\nStart from %s station on %s line towards %s for %d stations.\n", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine);
-    printf("\nTotal duration of journey: %d\n", totalTime);
+    printf("\nTotal duration of journey: %d minutes %d seconds\n", totalTimeMin, totalTimeSec);
   }
 
   //Transfer required
@@ -409,11 +409,13 @@ void displayPath(int sourceLineIndex, int destLineIndex, STATION *source, STATIO
     stopTime+= getStopTimes(transferStation, dest);
     transferTime = getTransferTime(source, dest, dest->lineName);
     printf("\n transferTime: %d\n", transferTime);
-    totalTime = stopTime + abs(currentTransferStation->timeToReach - source->timeToReach) + transferTime + abs(transferStation->timeToReach - dest->timeToReach);
+    totalTimeMin = (stopTime + abs(currentTransferStation->timeToReach - source->timeToReach) + transferTime + abs(transferStation->timeToReach - dest->timeToReach))/60;
+    totalTimeSec = (stopTime + abs(currentTransferStation->timeToReach - source->timeToReach) + transferTime + abs(transferStation->timeToReach - dest->timeToReach))%60;
+
     printf("\nStart from %s station on %s line towards %s for %d stations to reach %s.", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine, currentTransferStation->stationName);
     printf("\nTransfer to %s line.", transferStation->lineName);
     printf("\nTake %s line towards %s for %d stations to reach %s", transferStation->lineName, towards2, numberOfStationsTransferLine, dest->stationName);
-    printf("\nTotal duration of journey: %d\n", totalTime);
+    printf("\nTotal duration of journey: %d minutes %d seconds\n", totalTimeMin, totalTimeSec);
   }
 }
 
@@ -498,25 +500,15 @@ int main(int argc, char *argv[]) {
    }
   
    FILE *out = fopen(argv[1], "w");
-   //LINE* line[6] = {NULL}; //There are 6 lines
 
    //Array of transfer stations. Example: Fort Totten of green line is considered 1 transfer station and For Totten of red is considered as another.  
    //TRANSFERSTATION** transferStations;
    transferStations = (TRANSFERSTATION**) malloc(sizeof(TRANSFERSTATION) * 25);
    readStationsFromFile(line, transferStations);
-   printf("\n dest obj name: %s in line: %s  number: %d", destination->stationName, destination->lineName, destination->stationNumber);
-   printf("\n source obj name: %s in line: %s  number: %d\n", source->stationName, source->lineName, source->stationNumber);
 
    getPath(source, destination);
   
-   
-   //displayLine(line[0]);
-   //for(int i=0; i<25; i++)
-     //printf("\n%s %s",transferStations[i]->station->stationName, transferStations[i]->station->lineName);
    free(transferStations);
-   
    fclose(out);
-   //free(source);
-   //free(destination);
    return 0;
 }
