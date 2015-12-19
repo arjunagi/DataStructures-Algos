@@ -52,6 +52,9 @@ typedef struct transferStations {
   char* lineName;
 } TRANSFERSTATION;
 
+//Array of transfer stations. Example: Fort Totten of green line is considered 1 transfer station and For Totten of red is considered as another.  
+TRANSFERSTATION** transferStations;
+
 /*
  **********************************************************
  * Structure to store the path from source to destination
@@ -202,10 +205,11 @@ void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
     line[i] = makeLine();
 
     for(int j=0;j<numOfStations;j++) {
-      transferLines = malloc(sizeof(char) * 4);
+      transferLines = (char**) malloc(sizeof(char) * 4);
       stationInfo = (char*) malloc(100);
       stationName = (char*) malloc(30);
       isTransferPossible = false;
+      numOfTransferLines = 0;
       fgets(stationInfo,100,metro);
       sscanf(stationInfo,"%s %d %d %d", stationName, &numOfTransferLines, &timeToReach, &stopTime);
       temp = strtok (stationInfo," ");
@@ -242,18 +246,19 @@ void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
          destFound = true;
          destination = station;
       }
-      //printf(" LineName: %s  Name: %s  Transfers: %d  Stop: %d\n", lineName, stationName, numOfTransferLines, stopTime);
+      //printf("LineName: %s  Name: %s  Transfers: %d  Stop: %d\n", lineName, stationName, numOfTransferLines, stopTime);
    }
    fgets(blankLine, 5, metro); 
-   free(transferLines);
+   //free(transferLines);
   }
   free(stationInfo);
   free(stationName);
   free(lineInfo);
-  free(lineName);
+  free(transferLines);
   free(blankLine);
+  free(lineName);
   fclose(metro);
-  if(sourceFound == false && destFound == false) {
+  if(sourceFound == false || destFound == false) {
     printf("\n Source or destination station not found. Please try again! \n\n");
     exit(0);
   }
@@ -313,22 +318,141 @@ int getStopTimes(STATION *source, STATION* dest) {
 }
 
 
-void displayPath(int sourceLineIndex, int destLineIndex, STATION *source, STATION * dest, int startStationPos, int destStationPos, int numberOfStationsCurrentLine, int numberOfStationsTransferLine) {
- 
+void displayPath(int sourceLineIndex, int destLineIndex, STATION *source, STATION * dest, STATION *transferStation, int startStationPos, int destStationPos, int numberOfStationsCurrentLine, int numberOfStationsTransferLine, int currentTransferStationNumber, STATION* currentTransferStation) {
+
+  int stopTime, totalTime; 
   char *towards1, *towards2;
-  if(source->stationNumber > dest->stationNumber) {
-    towards1 = line[sourceLineIndex]->start->stationName;
+  
+  //No transfer required
+  if(transferStation == NULL) {
+    if(source->stationNumber > dest->stationNumber)
+      towards1 = line[sourceLineIndex]->start->stationName;
+    else if (source->stationNumber < dest->stationNumber) 
+      towards1 = line[sourceLineIndex]->end->stationName;
+
+    stopTime = getStopTimes(source,dest);
+    totalTime = stopTime + abs(source->timeToReach - dest->timeToReach);
+
+    printf("\nStart from %s station on %s line towards %s for %d stations.\n", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine);
+    printf("\nTotal duration of journey: %d\n", totalTime);
   }
-  else if (source->stationNumber < dest->stationNumber) {
-    towards1 = line[sourceLineIndex]->end->stationName;
+
+  //Transfer required
+  else {
+    if(source->stationNumber > currentTransferStationNumber)
+      towards1 = line[sourceLineIndex]->start->stationName;
+    else if (source->stationNumber < currentTransferStationNumber)
+      towards1 = line[sourceLineIndex]->end->stationName;
+
+    if(transferStation->stationNumber > dest->stationNumber)
+      towards2 = line[destLineIndex]->start->stationName;
+    if(transferStation->stationNumber < dest->stationNumber)
+      towards2 = line[destLineIndex]->end->stationName;
+
+    stopTime = getStopTimes(source,currentTransferStation);
+    stopTime+= getStopTimes(transferStation, dest);
+    totalTime = stopTime + abs(currentTransferStation->timeToReach - source->timeToReach) + abs(transferStation->timeToReach - dest->timeToReach);
+    printf("\nStart from %s station on %s line towards %s for %d stations to reach %s.", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine, currentTransferStation->stationName);
+    printf("\nTransfer to %s line.", transferStation->lineName);
+    printf("\nTake %s line towards %s for %d stations to reach %s", transferStation->lineName, towards2, numberOfStationsTransferLine, dest->stationName);
+    printf("\nTotal duration of journey: %d\n", totalTime);
+  }
+}
+
+/*
+ *****************************************************************************
+ * Get the index of the transfer station from the array of transfer stations.
+ *****************************************************************************
+ */
+int getTransferStationIndex(char* stationName, char* lineName) {
+  int i=0;
+  for(i=0; i<25; i++) {
+    if((strcmp(transferStations[i]->stationName, stationName) == 0) && (strcmp(transferStations[i]->lineName, lineName) == 0)) 
+      goto found_index;
+  }
+  found_index:
+  return i;
+}
+
+STATION* getCurrentTransferStation(STATION* source, STATION* dest) {
+  STATION *temp = source;
+  STATION *transferStation;
+  bool found = false;
+  char* destLineColor = dest->lineName;
+
+  while(temp->next != NULL && found == false) {
+    for(int i=0; i<temp->numOfTransferLines; i++) {
+      if(strcmp(temp->transferLines[i], destLineColor) == 0) {
+        found = true;
+        break;
+      }
+      if(found == true) break;
+    }
+    if(found == true) break;
+    temp = temp->next;
   }
 
-  int stopTime = getStopTimes(source,dest);
-  int totalTime = stopTime + abs(source->timeToReach - dest->timeToReach);
+  if(found == false) temp = source;
 
-  printf("\nStart from %s station on %s line towards %s for %d stations.\n", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine);
-  printf("Total duration of journey: %d\n", totalTime);
+  while(temp->prev != NULL && found == false) {
+    for(int i=0; i<temp->numOfTransferLines; i++) {
+      if(strcmp(temp->transferLines[i], destLineColor) == 0) {
+        found = true;
+        break;
+      }
+    }
+    if(found == true) break;
+    temp = temp->prev;
+  }
 
+  return temp;
+}
+
+/*
+ *******************************************************
+ * Get the station to which the transfer has to made.
+ *******************************************************
+ */
+STATION* getTransferStation(STATION* source, STATION* dest, int* currentTransferStationNumber) {
+
+  STATION *temp = source;
+  STATION *transferStation;
+  bool found = false;
+  char* destLineColor = dest->lineName;
+  int transferStationIndex = 0;
+ 
+  while(temp->next != NULL && found == false) { 
+    for(int i=0; i<temp->numOfTransferLines; i++) {
+      if(strcmp(temp->transferLines[i], destLineColor) == 0) {
+        found = true;
+        break;
+      }
+      if(found == true) break;
+    }
+    if(found == true) break;
+    temp = temp->next;
+  }
+  
+  if(found == false) temp = source;
+
+  while(temp->prev != NULL && found == false) {
+    for(int i=0; i<temp->numOfTransferLines; i++) {
+      if(strcmp(temp->transferLines[i], destLineColor) == 0) {
+        found = true;
+        break;
+      }
+    }
+    if(found == true) break;
+    temp = temp->prev;
+  }
+ 
+  if(found == true) {
+    *currentTransferStationNumber = temp->stationNumber;
+    transferStationIndex =  getTransferStationIndex(temp->stationName, destLineColor);
+    transferStation = transferStations[transferStationIndex]->station;
+  }
+  printf("\n transfer station: %s transferring to: %s", transferStation->stationName, transferStation->lineName);
+  return transferStation;
 }
  
 /*
@@ -343,17 +467,27 @@ PATH* getPath(STATION *source, STATION* dest) {
   int destLineIndex = getLineIndex(dest->lineName); 
   int startStationPos = 0, destStationPos = 0;  //If the the station number is in the first half of station list of that line then 0, else 1;
   int numberOfStationsCurrentLine = 0, numberOfStationsTransferLine = 0;
+  int currentTransferStationNumber = 0;
+  STATION *transferStation = NULL;
+  STATION *currentTransferStation = NULL;
   
-  if(source->stationNumber <= (line[sourceLineIndex]->numOfStations / 2)) startStationPos = 0;
-  else if(source->stationNumber > (line[sourceLineIndex]->numOfStations / 2)) startStationPos = 1;
-
-  if(dest->stationNumber <= (line[destLineIndex]->numOfStations / 2)) destStationPos = 0;
-  else if(dest->stationNumber > (line[destLineIndex]->numOfStations / 2)) destStationPos = 1;
 
   if(strcmp(source->lineName, dest->lineName) == 0) {
-    printf("\n same line \n");
+    if(source->stationNumber <= (line[sourceLineIndex]->numOfStations / 2)) startStationPos = 0;
+    else if(source->stationNumber > (line[sourceLineIndex]->numOfStations / 2)) startStationPos = 1;
+
+    if(dest->stationNumber <= (line[destLineIndex]->numOfStations / 2)) destStationPos = 0;
+    else if(dest->stationNumber > (line[destLineIndex]->numOfStations / 2)) destStationPos = 1;
+
     numberOfStationsCurrentLine = abs(dest->stationNumber - source->stationNumber);
-    displayPath(sourceLineIndex, destLineIndex, source, dest, startStationPos, destStationPos, numberOfStationsCurrentLine, numberOfStationsTransferLine);
+    displayPath(sourceLineIndex, destLineIndex, source, dest, transferStation, startStationPos, destStationPos, numberOfStationsCurrentLine, numberOfStationsTransferLine, currentTransferStationNumber, currentTransferStation);
+  }
+  else {
+     currentTransferStation = getCurrentTransferStation(source, dest);
+     transferStation = getTransferStation(source, dest, &currentTransferStationNumber);
+     numberOfStationsCurrentLine = abs(currentTransferStationNumber - source->stationNumber);
+     numberOfStationsTransferLine = abs(transferStation->stationNumber - dest->stationNumber);
+     displayPath(sourceLineIndex, destLineIndex, source, dest, transferStation, startStationPos, destStationPos, numberOfStationsCurrentLine, numberOfStationsTransferLine, currentTransferStationNumber, currentTransferStation);
   }
   return path;
 }
@@ -406,8 +540,8 @@ int main(int argc, char *argv[]) {
    //LINE* line[6] = {NULL}; //There are 6 lines
 
    //Array of transfer stations. Example: Fort Totten of green line is considered 1 transfer station and For Totten of red is considered as another.  
-   TRANSFERSTATION** transferStations;
-   transferStations = (TRANSFERSTATION**) malloc(sizeof(TRANSFERSTATION) * 24);
+   //TRANSFERSTATION** transferStations;
+   transferStations = (TRANSFERSTATION**) malloc(sizeof(TRANSFERSTATION) * 25);
    readStationsFromFile(line, transferStations);
    printf("\n dest obj name: %s in line: %s  number: %d", destination->stationName, destination->lineName, destination->stationNumber);
    printf("\n source obj name: %s in line: %s  number: %d\n", source->stationName, source->lineName, source->stationNumber);
@@ -416,7 +550,7 @@ int main(int argc, char *argv[]) {
   
    
    //displayLine(line[0]);
-   //for(int i=0; i<24; i++)
+   //for(int i=0; i<25; i++)
      //printf("\n%s %s",transferStations[i]->station->stationName, transferStations[i]->station->lineName);
    free(transferStations);
    
