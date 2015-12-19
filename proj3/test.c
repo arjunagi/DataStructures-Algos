@@ -6,6 +6,8 @@
 #define NUM_OF_LINES 6
 #define NEW(x) (x*)malloc(sizeof(x))
 
+FILE *out;
+
 // Global variables to store the source and destination stations 
 char* sourceName = NULL;
 char* destinationName = NULL;
@@ -369,15 +371,14 @@ STATION* getTransferStation(STATION* source, STATION* dest) {
     transferStationIndex =  getTransferStationIndex(temp->stationName, destLineColor);
     transferStation = transferStations[transferStationIndex]->station;
   }
-  printf("\n transfer station: %s transferring to: %s", transferStation->stationName, transferStation->lineName);
   return transferStation;
 }
 
-void displayPath(int sourceLineIndex, int destLineIndex, STATION *source, STATION * dest, STATION *transferStation, int startStationPos, int destStationPos, int numberOfStationsCurrentLine, int numberOfStationsTransferLine, STATION* currentTransferStation) {
+void displayPathAndWriteToFile(int sourceLineIndex, int destLineIndex, STATION *source, STATION * dest, STATION *transferStation, int startStationPos, int destStationPos, int numberOfStationsCurrentLine, int numberOfStationsTransferLine, STATION* currentTransferStation) {
 
   int stopTime=0, totalTimeMin=0, totalTimeSec=0, transferTime=0; 
   char *towards1, *towards2;
-  
+
   //No transfer required
   if(transferStation == NULL) {
     if(source->stationNumber > dest->stationNumber)
@@ -389,8 +390,10 @@ void displayPath(int sourceLineIndex, int destLineIndex, STATION *source, STATIO
     totalTimeMin = (stopTime + abs(source->timeToReach - dest->timeToReach))/60;
     totalTimeSec = (stopTime + abs(source->timeToReach - dest->timeToReach))%60;
 
-    printf("\nStart from %s station on %s line towards %s for %d stations.\n", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine);
-    printf("\nTotal duration of journey: %d minutes %d seconds\n", totalTimeMin, totalTimeSec);
+    fprintf(out, "Start from %s station on %s line towards %s for %d stations to arrive at %s.\nTotal duration of journey: %d minutes %d seconds\n", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine, dest->stationName, totalTimeMin, totalTimeSec);
+
+    printf("\nStart from %s station on %s line towards %s for %d stations to arrive at %s.", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine, dest->stationName);
+    printf("\nTotal duration of journey: %d minutes %d seconds\n\n", totalTimeMin, totalTimeSec);
   }
 
   //Transfer required
@@ -408,14 +411,15 @@ void displayPath(int sourceLineIndex, int destLineIndex, STATION *source, STATIO
     stopTime = getStopTimes(source,currentTransferStation);
     stopTime+= getStopTimes(transferStation, dest);
     transferTime = getTransferTime(source, dest, dest->lineName);
-    printf("\n transferTime: %d\n", transferTime);
     totalTimeMin = (stopTime + abs(currentTransferStation->timeToReach - source->timeToReach) + transferTime + abs(transferStation->timeToReach - dest->timeToReach))/60;
     totalTimeSec = (stopTime + abs(currentTransferStation->timeToReach - source->timeToReach) + transferTime + abs(transferStation->timeToReach - dest->timeToReach))%60;
+    
+    fprintf(out, "Start from %s station on %s line towards %s for %d stations to reach %s.\nTransfer to %s line.\nTake %s line towards %s for %d stations to reach %s.\nTotal duration of journey: %d minutes %d seconds.", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine, currentTransferStation->stationName, transferStation->lineName, transferStation->lineName, towards2, numberOfStationsTransferLine, dest->stationName, totalTimeMin, totalTimeSec);
 
     printf("\nStart from %s station on %s line towards %s for %d stations to reach %s.", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine, currentTransferStation->stationName);
     printf("\nTransfer to %s line.", transferStation->lineName);
     printf("\nTake %s line towards %s for %d stations to reach %s", transferStation->lineName, towards2, numberOfStationsTransferLine, dest->stationName);
-    printf("\nTotal duration of journey: %d minutes %d seconds\n", totalTimeMin, totalTimeSec);
+    printf("\nTotal duration of journey: %d minutes %d seconds\n\n", totalTimeMin, totalTimeSec);
   }
 }
 
@@ -426,7 +430,7 @@ void displayPath(int sourceLineIndex, int destLineIndex, STATION *source, STATIO
  *
  ******************************************************
  */
-void getPath(STATION *source, STATION* dest) {
+void getPathAndWriteToFile(STATION *source, STATION* dest) {
   
   int sourceLineIndex = getLineIndex(source->lineName); 
   int destLineIndex = getLineIndex(dest->lineName); 
@@ -434,6 +438,8 @@ void getPath(STATION *source, STATION* dest) {
   int numberOfStationsCurrentLine = 0, numberOfStationsTransferLine = 0;
   STATION *transferStation = NULL;
   STATION *currentTransferStation = NULL;
+
+  if(out==NULL) printf("\n HERE\n");
   
 
   if(strcmp(source->lineName, dest->lineName) == 0) {
@@ -444,14 +450,14 @@ void getPath(STATION *source, STATION* dest) {
     else if(dest->stationNumber > (line[destLineIndex]->numOfStations / 2)) destStationPos = 1;
 
     numberOfStationsCurrentLine = abs(dest->stationNumber - source->stationNumber);
-    displayPath(sourceLineIndex, destLineIndex, source, dest, transferStation, startStationPos, destStationPos, numberOfStationsCurrentLine, numberOfStationsTransferLine, currentTransferStation);
+    displayPathAndWriteToFile(sourceLineIndex, destLineIndex, source, dest, transferStation, startStationPos, destStationPos, numberOfStationsCurrentLine, numberOfStationsTransferLine, currentTransferStation);
   }
   else {
      currentTransferStation = getCurrentTransferStation(source, dest);
      transferStation = getTransferStation(source, dest);
      numberOfStationsCurrentLine = abs(currentTransferStation->stationNumber - source->stationNumber);
      numberOfStationsTransferLine = abs(transferStation->stationNumber - dest->stationNumber);
-     displayPath(sourceLineIndex, destLineIndex, source, dest, transferStation, startStationPos, destStationPos, numberOfStationsCurrentLine, numberOfStationsTransferLine, currentTransferStation);
+     displayPathAndWriteToFile(sourceLineIndex, destLineIndex, source, dest, transferStation, startStationPos, destStationPos, numberOfStationsCurrentLine, numberOfStationsTransferLine, currentTransferStation);
   }
 }
 
@@ -499,16 +505,15 @@ int main(int argc, char *argv[]) {
      exit(0);
    }
   
-   FILE *out = fopen(argv[1], "w");
+   out = fopen(argv[1], "w+");
 
    //Array of transfer stations. Example: Fort Totten of green line is considered 1 transfer station and For Totten of red is considered as another.  
-   //TRANSFERSTATION** transferStations;
    transferStations = (TRANSFERSTATION**) malloc(sizeof(TRANSFERSTATION) * 25);
    readStationsFromFile(line, transferStations);
 
-   getPath(source, destination);
+   getPathAndWriteToFile(source, destination);
   
    free(transferStations);
-   fclose(out);
+   //fclose(out);
    return 0;
 }
