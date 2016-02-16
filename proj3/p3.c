@@ -1,19 +1,19 @@
 /*
- * Please compile using "gcc -std=c99" 
+ * Please compile using "gcc -std=c99"
  *
  * Description: This is a program to find the fastest path from source station to destination station in Washington DC metro map.
  *
  * Data Structures Used:
  * 1. LINE - Structure for a line - will have start and end stations along with number of stations on a line.
  * 2. Array of lines (each element is an object of type LINE)
- * 3. STATION - Stations of a line in a linked list 
+ * 3. STATION - Stations of a line in a linked list
  * 4. TRANSFERSTATION - Strcuture to hold the transfer station - will have pointer to actual station (of type STATION) which is in the linked list of a line.
  * 5. Array of transfer stations (each element is an object of type TRANSFERSTATION).
  *
  * Algorithm:
  * 1. Create a graph with all the lines (each line is a linked list) - The TRANSFERSTATION objects provides the connections in the graph.
  * 2. If source and dest are on same line, no need of transfer
- * 3. From the array of transfer stations, we can know at what stations transfer can be done and to what line. 
+ * 3. From the array of transfer stations, we can know at what stations transfer can be done and to what line.
  * 4. If they are not on same line, find a transfer station on the source line from which we can make a transfer to dest line.
  *
  */
@@ -29,7 +29,7 @@
 //File to write the  output to.
 FILE *out;
 
-// Global variables to store the source and destination stations 
+// Global variables to store the source and destination stations
 char* sourceName = NULL;
 char* destinationName = NULL;
 
@@ -53,7 +53,7 @@ STATION *destination;
 
 /*
  **************************************************************************************
- * Data structure for the line(root) node. The root node has the 
+ * Data structure for the line(root) node. The root node has the
  * pointers to the first and last stations and also the number of stations on a line.
  **************************************************************************************
  */
@@ -70,16 +70,16 @@ LINE* line[6] = {NULL}; //There are 6 lines
  * Structure to store a transfer station and its properties:
  * 1.Pointer to the transfer station node in the line linked list.
  * 2.Name of the station
- * 3.The current line color. 
+ * 3.The current line color.
  ********************************************************************************
  */
 typedef struct transferStations {
-  STATION* station; // Pointer to the transfer station in a line  
+  STATION* station; // Pointer to the transfer station in a line
   char* stationName;
   char* lineName;
 } TRANSFERSTATION;
 
-//Array of transfer stations. Example: Fort Totten of green line is considered 1 transfer station and For Totten of red is considered as another.  
+//Array of transfer stations. Example: Fort Totten of green line is considered 1 transfer station and For Totten of red is considered as another.
 TRANSFERSTATION** transferStations;
 
 // Create a line (Root)
@@ -134,7 +134,7 @@ STATION* insertStationInLine(LINE *line, char* lineName, char* stationName, int 
 
   STATION *temp;
   temp = makeStation(lineName,stationName,stationNumber,numOfTransferLines,timeToReach,stopTime,transferLines,transferTimes);
-  
+
   if (temp == NULL) return NULL; // fail, cannot create new NODE
 
   if (line == NULL) {
@@ -174,8 +174,6 @@ bool isStationValidTransferStation(char* stationName) {
   else if(strcmp(stationName,"King_St_Old_Town") == 0) return true;
   else return false;
 }
-
-
 
 /*
  *************************************************************
@@ -223,10 +221,9 @@ STATION* getCorrectStation(STATION* source, STATION* dest) {
   else return source;
 }
 
-
 /*
  *************************************************
- * Read the stations from the file along with its 
+ * Read the stations from the file along with its
  * properties and store it in the data strcuture.
  *************************************************
  */
@@ -239,7 +236,7 @@ void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
   }
 
   int ch=0;
-  char *lineInfo = NULL, *lineName = NULL; 
+  char *lineInfo = NULL, *lineName = NULL;
   char *blankLine = calloc(5, sizeof(char*));
   int numOfStations = 0;
   char *stationInfo = NULL, *stationName = NULL;
@@ -272,9 +269,9 @@ void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
       temp = strtok (stationInfo," ");
       n=0;
       if(numOfTransferLines != 0) {
-         while (temp != NULL && n<(4+(numOfTransferLines*2)))  
-  	 {
-         //At transfer stations, there are 4 strings of station name, transfers, time from first stop, stop time. If there is 1 transfer, then there are 2 
+         while (temp != NULL && n<(4+(numOfTransferLines*2)))
+         {
+         //At transfer stations, there are 4 strings of station name, transfers, time from first stop, stop time. If there is 1 transfer, then there are 2
          //more strings - transfer line and transfer time. If there is 2 transfers, then there are 4 more strings and so on.
            if(n>=4)
              tempTransferLines[n-4] = temp;
@@ -284,7 +281,7 @@ void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
         x=0, y=0;
         // Store the transfer lines and the transfer times in their respective arrays.
         for(n=0;n<(numOfTransferLines*2);n++) {
-          if(n%2 == 0) { transferLines[x] = tempTransferLines[n]; x++; } 
+          if(n%2 == 0) { transferLines[x] = tempTransferLines[n]; x++; }
           else { transferTimes[y] = atoi(tempTransferLines[n]); y++; }
         }
       }
@@ -306,7 +303,7 @@ void readStationsFromFile(LINE* line[], TRANSFERSTATION* transferStations[]) {
          destination = station;
       }
    }
-   fgets(blankLine, 5, metro); 
+   fgets(blankLine, 5, metro);
   }
   if(sourceFound == true && destFound == true) {
     source = getCorrectStation(source,destination);
@@ -383,11 +380,10 @@ STATION* getCurrentTransferStation(STATION* source, STATION* dest) {
     if(found == true) break;
     temp = temp->prev;
   }
-  
+
   if(found == true) return temp;
   else return NULL;
 }
-
 
 /*
  ************************************************
@@ -395,10 +391,10 @@ STATION* getCurrentTransferStation(STATION* source, STATION* dest) {
  ************************************************
  */
 int getTransferTime(STATION* source, STATION* dest, char* destLineColor) {
-  
+
   STATION* temp = getCurrentTransferStation(source,dest);
   for(int i=0; i<temp->numOfTransferLines; i++) {
-    if(strcmp(temp->transferLines[i], destLineColor) == 0) 
+    if(strcmp(temp->transferLines[i], destLineColor) == 0)
       return temp->transferTimes[i];
   }
   return 0;
@@ -440,7 +436,7 @@ int getStopTimes(STATION *source, STATION* dest) {
 int getTransferStationIndex(char* stationName, char* lineName) {
   int i=0;
   for(i=0; i<25; i++) {
-    if((strcmp(transferStations[i]->stationName, stationName) == 0) && (strcmp(transferStations[i]->lineName, lineName) == 0)) 
+    if((strcmp(transferStations[i]->stationName, stationName) == 0) && (strcmp(transferStations[i]->lineName, lineName) == 0))
       goto found_index;
   }
   found_index:
@@ -458,7 +454,7 @@ STATION* getTransferStation(STATION* source, STATION* dest) {
   STATION *transferStation;
   int transferStationIndex = 0;
   char* destLineColor = dest->lineName;
-  
+
   temp = getCurrentTransferStation(source,dest);
   if(temp != NULL) {
     transferStationIndex =  getTransferStationIndex(temp->stationName, destLineColor);
@@ -474,14 +470,14 @@ STATION* getTransferStation(STATION* source, STATION* dest) {
  */
 void displayPathAndWriteToFile(int sourceLineIndex, int destLineIndex, STATION *source, STATION * dest, STATION *transferStation, int numberOfStationsCurrentLine, int numberOfStationsTransferLine, STATION* currentTransferStation) {
 
-  int stopTime=0, totalTimeMin=0, totalTimeSec=0, transferTime=0; 
+  int stopTime=0, totalTimeMin=0, totalTimeSec=0, transferTime=0;
   char *towards1, *towards2; //Station name towards which the train is headed.
 
   //No transfer required
-  if(transferStation == NULL) {
+if(transferStation == NULL) {
     if(source->stationNumber > dest->stationNumber)
       towards1 = line[sourceLineIndex]->start->stationName;
-    else if (source->stationNumber < dest->stationNumber) 
+    else if (source->stationNumber < dest->stationNumber)
       towards1 = line[sourceLineIndex]->end->stationName;
 
     stopTime = getStopTimes(source,dest);
@@ -521,11 +517,11 @@ void displayPathAndWriteToFile(int sourceLineIndex, int destLineIndex, STATION *
     printf("\nTotal duration of journey: %d minutes %d seconds\n\n", totalTimeMin, totalTimeSec);
     }
 
-    // Consider the transfer and transfer time
+   // Consider the transfer and transfer time
     else{
       totalTimeMin = (stopTime + abs(currentTransferStation->timeToReach - source->timeToReach) + transferTime + abs(transferStation->timeToReach - dest->timeToReach))/60;
       totalTimeSec = (stopTime + abs(currentTransferStation->timeToReach - source->timeToReach) + transferTime + abs(transferStation->timeToReach - dest->timeToReach))%60;
-    
+
       fprintf(out, "Start from %s station on %s line towards %s for %d stations to reach %s.\nTransfer to %s line.\nTake %s line towards %s for %d stations to reach %s.\nTotal duration of journey: %d minutes %d seconds.", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine, currentTransferStation->stationName, transferStation->lineName, transferStation->lineName, towards2, numberOfStationsTransferLine, dest->stationName, totalTimeMin, totalTimeSec);
 
       printf("\nStart from %s station on %s line towards %s for %d stations to reach %s.", source->stationName, source->lineName, towards1, numberOfStationsCurrentLine, currentTransferStation->stationName);
@@ -536,16 +532,16 @@ void displayPathAndWriteToFile(int sourceLineIndex, int destLineIndex, STATION *
   }
 }
 
- 
+
 /*
  ******************************************************
  * Find the path and write to the file.
  ******************************************************
  */
 void findPathAndWriteToFile(STATION *source, STATION* dest) {
-  
-  int sourceLineIndex = getLineIndex(source->lineName); 
-  int destLineIndex = getLineIndex(dest->lineName); 
+
+  int sourceLineIndex = getLineIndex(source->lineName);
+  int destLineIndex = getLineIndex(dest->lineName);
   int numberOfStationsCurrentLine = 0, numberOfStationsTransferLine = 0; //Number of stations to be considered in the path from source line and dest line.
   STATION *transferStation = NULL; //Transfer station on destination line
   STATION *currentTransferStation = NULL; //Transfer station on source line. Station name will be same as the above, but lineName will be diffrent
@@ -566,7 +562,6 @@ void findPathAndWriteToFile(STATION *source, STATION* dest) {
   }
 }
 
-
 /*
  **********************************
  * Display the stations in a line
@@ -586,7 +581,6 @@ void displayLine(LINE* line) {
   printf("\n");
 }
 
-
 int main(int argc, char *argv[]) {
 
    if(argc != 2) {
@@ -594,7 +588,7 @@ int main(int argc, char *argv[]) {
      printf("\nThe usage is: a.out output_file\n");
      exit(0);
    }
-   
+
    sourceName = (char*) malloc(30);;
    destinationName = (char*) malloc(30);;
    printf("\nEnter the source station(case sensitive): ");
@@ -609,16 +603,21 @@ int main(int argc, char *argv[]) {
      printf("\nSource and destination is same!\n");
      exit(0);
    }
-  
+
    out = fopen(argv[1], "w+");
 
-   //Array of transfer stations. Example: Fort Totten of green line is considered 1 transfer station and For Totten of red is considered as another.  
+   //Array of transfer stations. Example: Fort Totten of green line is considered 1 transfer station and For Totten of red is considered as another.
    transferStations = (TRANSFERSTATION**) malloc(sizeof(TRANSFERSTATION) * 25);
    readStationsFromFile(line, transferStations);
 
    findPathAndWriteToFile(source, destination);
-  
+
    free(transferStations);
    fclose(out);
    return 0;
 }
+
+
+
+
+
