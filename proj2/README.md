@@ -28,5 +28,15 @@ The program will run using the below command:
 a.out –k op1 op2 result                                                                                                                 
 where k is the block size and result is the name of the result file.
 
+#### Code Logic                                                                                                                         
+**Data Structure:** Doubly Linked List with a Root node storing the head and tail of the list.                                          
+**Steps:**                                                                                                                              
+ 1. Both numbers are read from a seperate file and they are stored as Strings.                                    
+ 2. Two linked lists are created to store these numbers. Each node will have a block size number of digits from the string.
+ 3. The addition, subtraction and multiplication operations are done using these two lists.
+ 4. The result of these operations and the number of block operations used for each arithematic operation are stored in a result file and also displayed on the screen.
+
+**NOTE:** When compiling in UNIX, please use "-lm" option. This is required as I am using math.h for the pow() function. 
+    Example: gcc -lm p2.c
 
 
